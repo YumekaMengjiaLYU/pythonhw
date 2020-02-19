@@ -1,0 +1,865 @@
+\documentclass[11pt]{article}
+\usepackage[letterpaper]{geometry}
+\usepackage[latin1]{inputenc}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{bbm}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{makecell}
+\usepackage{url}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{listings}
+\titleformat{\subsubsection}[runin]{}{}{}{}[]
+
+
+
+\title{COMS W4721 Spring 2020 Homework 1: Maximum Likelihood, Linear Regression, Bias-Variance Tradeoffs}
+\author{Mengjia Lyu (ml4420@columbia.edu)}
+\graphicspath{{.}}
+\pagestyle{plain}
+
+\setstretch{1.25}
+
+
+\begin{document}
+	
+\maketitle
+
+\noindent For this assignment I collaborated with the following people. Blank entries in this
+table means that I have worked on the corresponding parts on my own.
+
+\ \\
+\begin{tabular}{|p{0.25\textwidth}|p{0.4\textwidth}|p{0.3\textwidth}|}
+	 \Xhline{4\arrayrulewidth}
+Problem & Collaborators with their UNIs & Part\\
+	\Xhline{4\arrayrulewidth}
+Problem 2 & Collaborator 1 (uni1@columbia.edu) & Part (a), (b)
+ \\
+ & Collaborator 2 (uni2@columbia.edu) & Part (b) \\
+\hline
+Problem 3 & & \\
+\hline
+Problem 4 & Collaborator 3 (uni3@columbia.edu) & Part (c)\\
+\hline
+\end{tabular}
+
+
+
+\clearpage
+\subsection*{Problem 1}
+Introduction: Please briefly describe your academic/career goals and your expectations about the course.
+
+{\noindent \bf Answer:
+My career goal is to become a machine learning engineer. 
+My expectations about the course is to learn things that I cannot learn purely from free online resources.
+}
+
+\vfill
+
+\clearpage
+\subsection*{Problem 2}
+
+In this problem we will review the principle of {\it maximum likelihood estimation}.
+
+
+\subsubsection*{(a)}
+	We are given a coin which falls its heads up with probability $0 < \theta < 1$. 
+	Each throw is a Bernoulli random variable $x = \begin{cases}1, \mbox{if\ falls\ heads\ up}\\
+	 0, \mbox{if\ falls\ tails\ up}\end{cases}$.
+	
+	\ \\
+	For a Bernoulli random variable $x$: the probability mass function of
+	$x$ is given by: $$\Pr( x; \theta) = \theta^x ( 1 - \theta)^{(1 - x)}$$
+	
+	\ \\
+	Suppose we repeat the coin toss $N$ times
+	to collect the data  $\{ x^{(i)}  \}_{i = 1}^N$. 
+	Write the log likelihood function $\ln \mathcal{L}(\theta; \{ x^{(i)}\}_{i = 1}^N)$ and 
+	the maximum likelihood estimation of $\theta$,  $\hat{\theta}_{\mathsf{MLE}}$.
+
+{\noindent \bf Solution: 
+\ \\
+First we write the likelihood function for Bernoulli distribution
+
+$ \mathcal{L}(\theta; \{ x^{(i)}\}_{i = 1}^N) = \prod\limits_{i=1}^{N} \theta^{x^{(i)}} (1-\theta)^{1-x^{(i)}}$
+
+
+\ \\
+Then we write the log likelihood function for Bernoulli distribution
+\begin{equation}
+    \begin{split}
+         \ln \mathcal{L}(\theta; \{ x^{(i)}\}_{i = 1}^N) &= \prod\limits_{i=1}^{N} \ln\theta^{x^{(i)}} (1-\theta)^{1-x^{(i)}}\\
+                                                         &= \prod\limits_{i=1}^{N} x^{(i)}\ln \theta + (1-x^{(i)})\ln(1-\theta) \\
+                                                       & = y\ln \theta+(N-y)\ln(1-\theta)
+    \end{split}
+\end{equation}
+\ \\
+To find the maximum likelihood estimation of $\theta$,  $\hat{\theta}_{\mathsf{MLE}}$, we need to find the first derivative of the log likelihood function and set it equal to 0.
+
+\begin{gather*}
+    \frac{\partial\ln \mathcal{L}(\theta; \{ x^{(i)}\}_{i = 1}^N)}{\partial\theta} =   \frac{\partial y\ln \theta+(n-y)\ln(1-\theta)}{\partial\theta} = 
+    y\frac{1}{\theta}-(n-y)\frac{1}{1-\theta} =0 \\
+\end{gather*}
+\ \\
+Therefore we have
+
+\begin{gather*}
+      \hat{\theta}_{\mathsf{MLE}} = \frac{y}{N}=\frac{\sum_{i=1}^{N} x^{(i)}}{N} 
+\end{gather*}
+}
+
+\vfill 
+
+\subsubsection*{(b)}
+	
+	Suppose instead we are given a die with $K$ sides with each side falling its heads up with
+	probability $0 < \theta_k < 1$. While we can represent the result of a throw using
+	a categorical variable $x \in \{1, \cdots, K\}$, we can use $\mbox{1-of-K}$ encoding:
+	$$x = k \ \ \ \Leftrightarrow \ \ \ \mathbf{x} = [0, \cdots, 
+	\underbrace{1}_{\tiny \begin{array}{c} 
+		\mbox{k-th}\\
+		\mbox{position}\\
+		:= x_k
+		\end{array}}, \cdots, 0]$$
+	
+	Each throw is a categorical random variable
+	$\mathbf{x} \sim \mathrm{Categorical}(\theta_1, \cdots, \theta_K)$ such that
+	$\Pr(x_k = 1; \mathbf{\theta}) = \theta_k$ and $\sum\limits_{k = 1}^K \theta_k = 1$.
+	The probability mass function at $\mathbf{x}$ is given by: $$\Pr( \mathbf{x}; \theta_1, \cdots, \theta_K)
+	 = \prod\limits_{k = 1}^K \theta_k ^{x_k}$$
+	\ \\
+	Suppose we throw the die $N$ times and obtain the data
+	$\{ \mathbf{x}^{(i)} \}_{i = 1}^N$.	
+	Write the log likelihood function $\ln \mathcal{L}(
+	\mathbf{\theta}; \{ \mathbf{x}^{(i)}\}_{i = 1}^N )$ and 
+	the maximum likelihood estimation of $\theta$,  $\hat{\theta}_{\mathsf{MLE}}$. 
+	
+	\ \\
+	{\bf Hint}: Once you obtain the log likelihood function 
+	$\mathcal{L}(
+	\mathbf{\theta}; \{ \mathbf{x}^{(i)}\}_{i = 1}^N )$, you will need to add the Lagrangian multiplier part that takes 
+	the probability sum constraint $\sum\limits_{k = 1}^K \theta_k = 1$. For $\lambda \in \mathbb{R}$,
+	the Lagrangian is:
+	$$\ln \mathcal{L}_{\lambda}(\mathbf{\theta}; \{ \mathbf{x}^{(i)}\}_{i = 1}^N) = 
+	\ln \mathcal{L}(\mathbf{\theta}; \{ \mathbf{x}^{(i)}\}_{i = 1}^N) + 
+	\lambda \left (1 - \sum\limits_{k = 1}^K \theta_k \right )$$
+	Take the partial derivative of $\ln \mathcal{L}(
+	\mathbf{\theta}; \{ \mathbf{x}^{(i)}\}_{i = 1}^N )$ with respect to each $\theta_k$ and $\lambda$, set them to zero,
+	and solve for each variable of $\theta_k$. Appendix E of Bishop's book may be helpful for
+	this problem.
+	
+	{\noindent \bf Solution: 
+	\ \\
+	First we write the likelihood function for Bernoulli distribution
+
+$$ \mathcal{L}(
+	\mathbf{\theta}; \{ \mathbf{x}^{(i)}\}_{i = 1}^N ) = \prod\limits_{i=1}^N[ \, \prod\limits_{k = 1}^K \theta_k ^{x^{(i)}_k}]\,= \prod\limits_{k=1}^K \theta_k^{N_k}$$
+    where $N_k = \sum\limits_{i=1}^N x^{(i)}_k $is the number of times $x=k$
+
+\ \\
+Then we write the log likelihood function for Bernoulli distribution
+\begin{equation}
+    \begin{split}
+        \ln \mathcal{L}(
+	\mathbf{\theta}; \{ \mathbf{x}^{(i)}\}_{i = 1}^N ) &= \ln \prod\limits_{i=1}^N[ \, \prod\limits_{k = 1}^K \theta_k ^{x^{(i)}_k}]\,\\
+	&=\ln \prod\limits_{k=1}^K \theta_k^{N_k}\\
+	&= \sum\limits_{k=1}^K N_k \ln \theta_k \\
+    \end{split}
+\end{equation}
+
+\ \\
+To find the maximum likelihood estimation of $\theta$,  $\hat{\theta}_{\mathsf{MLE}}$, usually we find the first derivative of the log likelihood function and set it equal to 0. 
+
+\ \\
+Notice that the function is subject to the probability sum constraint $\sum\limits_{k = 1}^K \theta_k - 1 = 0$. Therefore, we can use the Lagrangian function $\ln \mathcal{L}_{\lambda}(\mathbf{\theta}; \{ \mathbf{x}^{(i)}\}_{i = 1}^N)$ with parameter $\lambda \in \mathbb{R}$ to find the maximum likelihood estimate $\hat{\theta}_{\mathsf{MLE}}$. The constrained cost function becomes
+
+\ \\
+ $$\ln \mathcal{L}_{\lambda}(\mathbf{\theta}; \{ \mathbf{x}^{(i)}\}_{i = 1}^N) = 
+	\sum\limits_{k=1}^K N_k \ln \theta_k
+	+ 
+	\lambda \left (1 - \sum\limits_{k = 1}^K \theta_k \right )$$
+
+\ \\
+Taking derivative with respect to $\theta_k$ yields
+$$    \frac{\partial \ln \mathcal{L}_{\lambda}(\mathbf{\theta}; \{ \mathbf{x}^{(i)}\}_{i = 1}^N)}{\partial \theta_k}= \frac{N_k}{\theta_k}-\lambda=0\\$$
+
+\ \\
+Taking derivative with respect to $\lambda$ yields the original constraint
+$$\frac{\partial \ln \mathcal{L}_{\lambda}(\mathbf{\theta}; \{\mathbf{x}^{(i)}\}_{i = 1}^N)}{\partial \lambda}= \left (1 - \sum\limits_{k = 1}^K \theta_k \right)= 0$$
+\ \\
+Using this sum-to-one constraint we have
+
+\begin{gather*}
+N_k=\lambda\theta_k\\
+\sum\limits_{k=1}^K N_k = \lambda\sum\limits_{k=1}^K \theta_k\\
+N = \lambda\\
+      \hat{\theta}^{(k)}_{\mathsf{MLE}} = \frac{N_k}{N}=\frac{\sum_{i=1}^{N} x^{(i)}_k}{N} 
+\end{gather*}
+	}
+	
+	\vfill
+	
+\subsubsection*{(c)}
+	In class we derived a MLE estimator for the univariate Gaussian assumption. For
+	 $\{x^{(i)} \in \mathbb{R} \}_{i = 1}^N$ i.i.d, we chose $p(x | \mu, \sigma^2) = \frac{1}{\sqrt{2 \pi \sigma^2}}
+	 \exp \left ( \frac{- (x - \mu)^2}{2 \sigma^2} \right )$ and solved for $\hat{\mu}_{\mathsf{MLE}}$
+	 and $\hat{\sigma}^2_{\mathsf{MLE}}$. Repeat this exercise for the multivariate case:
+	 now assume  $\{ \mathbf{x}^{(i)} \in \mathbb{R}^d \}_{i = 1}^N$ and
+	 choose $p( \mathbf{x} | \mathbf{\mu}, \mathbf{\Sigma}) =
+	 \frac{1}{ (2 \pi)^{\frac{d}{2}} \sqrt{ \mathsf{det}(\Sigma) }}
+	 \exp \left ( \frac{- ( \mathbf{x} - \mathbf{\mu})^T
+	 	\mathbf{\Sigma}^{-1} ( \mathbf{x} - \mathbf{\mu})
+	 }{2} \right )$. Write the log likelihood function 
+ 	$\ln \mathcal{L}( \{ \mu, \Sigma \}; \{ x^{(i)}\}_{i = 1}^N
+ 	)$ and solve for $\hat{\mu}_{\mathsf{MLE}}$ and $\hat{\Sigma}_{\mathsf{MLE}}$.
+
+{\noindent \bf Solution: 
+
+\begin{equation}
+    \begin{split}
+        \ln \mathcal{L}( \{ \mu, \mathbf{\Sigma} \}; \{ \mathbf{x^{(i)}}\}_{i = 1}^N&=\ln \prod\limits_{i=1}^Np( \mathbf{x} | \mathbf{\mu}, \mathbf{\Sigma})\\
+        &=\sum\limits_{i=1}^N\ln p( \mathbf{x^{(i)}} | \mathbf{\mu}, \mathbf{\Sigma})\\
+        &=\sum\limits_{i=1}^N\ln \frac{1}{ (2 \pi)^{\frac{d}{2}} \sqrt{ \mathsf{det}(\Sigma) }}
+	 \exp \left ( \frac{- ( \mathbf{x^{(i)}} - \mathbf{\mu})^T
+	 	\mathbf{\Sigma}^{-1} ( \mathbf{x^{(i)}} - \mathbf{\mu})
+	 }{2} \right )
+    \end{split}
+\end{equation}
+
+\ \\
+Since $\frac{1}{(2 \pi)^{\frac{d}{2}}} $ is a constant, we can use $C=\frac{1}{(2 \pi)^{\frac{d}{2}}} $ to denote it for the sake of simplicity.
+
+\ \\
+\begin{equation}
+    \begin{split}
+       \ln \mathcal{L}( \{ \mu, \mathbf{\Sigma} \}; \{ \mathbf{x^{(i)}}\}_{i = 1}^N&= \sum\limits_{i=1}^N\ln \frac{1}{ (2 \pi)^{\frac{d}{2}} \sqrt{ \mathsf{det}(\Sigma) }}
+	 \exp \left ( \frac{- ( \mathbf{x^{(i)}} - \mathbf{\mu})^T
+	 	\mathbf{\Sigma}^{-1} ( \mathbf{x^{(i)}} - \mathbf{\mu})
+	 }{2} \right )\\
+	 &= \sum\limits_{i=1}^N\ln \left(C \frac{1}{\sqrt{\mathsf{det}(\Sigma)}} \right)
+	 \exp \left ( \frac{- ( \mathbf{x^{(i)}} - \mathbf{\mu})^T
+	 	\mathbf{\Sigma}^{-1} ( \mathbf{x^{(i)}} - \mathbf{\mu})
+	 }{2} \right )\\
+	 &= \sum\limits_{i=1}^N \left [\ln C+\ln\frac{1}{\sqrt{\mathsf{det}(\Sigma)}}+\ln \exp \left ( \frac{- ( \mathbf{x^{(i)}} - \mathbf{\mu})^T
+	 	\mathbf{\Sigma}^{-1} ( \mathbf{x^{(i)}} - \mathbf{\mu})
+	 }{2} \right )\right]\\
+	 &= \sum\limits_{i=1}^N \left [ \frac{- ( \mathbf{x^{(i)}} - \mathbf{\mu})^T
+	 	\mathbf{\Sigma}^{-1} ( \mathbf{x^{(i)}} - \mathbf{\mu})
+	 }{2} -\frac{1}{2}\ln\mathsf{det}(\Sigma) + \ln C\right]\\
+    &= -\frac{1}{2}\sum\limits_{i=1}^N [( \mathbf{x^{(i)}} - \mathbf{\mu})^T
+	 	\mathbf{\Sigma}^{-1} ( \mathbf{x^{(i)}} - \mathbf{\mu})]-\frac{N}{2}\ln\mathsf{det}(\Sigma) + N\ln C
+    \end{split}
+\end{equation}
+\ \\
+To solve for $\hat{\mu}_{\mathsf{MLE}}$, we take the derivative of the log likelihood function with respect to $\mu$ and set it to 0.
+
+\begin{equation}
+    \begin{split}
+        \frac{\partial  { \ln \mathcal{L}( \{ \mu, \mathbf{\Sigma} \}; \{ \mathbf{x^{(i)}}\}_{i = 1}^N}}{\partial \mu} &= \frac{\partial -\frac{1}{2}\sum\limits_{i=1}^N [( \mathbf{x^{(i)}} - \mathbf{\mu})^T
+	 	\mathbf{\Sigma}^{-1} ( \mathbf{x^{(i)}} - \mathbf{\mu})]-\frac{N}{2}\ln\mathsf{det}(\Sigma) + N\ln C}{\partial \mu}\\
+	 	&= \frac{\partial  -\frac{1}{2}\sum\limits_{i=1}^N [( \mathbf{x^{(i)}} - \mathbf{\mu})^T
+	 	\mathbf{\Sigma}^{-1} ( \mathbf{x^{(i)}} - \mathbf{\mu})}{\partial \mu}
+    \end{split}
+\end{equation}
+
+\ \\
+To further simplify the derivative, we introduce the following property
+\begin{itemize}
+    \item If A is symmetric, $$ \frac{\partial \mathbf{x}^T\mathbf{A}\mathbf{x}}{\partial \mathbf{x}}=\mathbf{x}^T(\mathbf{A}+\mathbf{A}^T)=2\mathbf{Ax}$$
+    \emph{Proof}:
+    \ \\
+    By product rule, we have
+    \begin{gather*}
+        \frac{\partial \mathbf{x}^T\mathbf{A}\mathbf{x}}{\partial \mathbf{x}}=\mathbf{x}^T\frac{\partial \mathbf{Ax}}{\partial \mathbf{x}}+(\mathbf{Ax})^T\frac{\partial \mathbf{x}}{\partial \mathbf{x}}
+    \end{gather*}
+    Notice that 
+    \begin{gather*}
+        \mathbf{Ax}=\begin{bmatrix}
+a_{11}&\cdots &a_{1n} \\
+\vdots &\ddots & \vdots\\
+a_{n1}&\cdots &a_{nn}
+\end{bmatrix}\begin{bmatrix}
+x_{1}&\cdots &x_{n} \\
+\end{bmatrix}=\begin{bmatrix}
+a_{11}x{1}+&\cdots &a_{1n}x{n} \\
+\vdots\\
+a_{n1}x{1}+&\cdots &a_{nn}x{n}
+\end{bmatrix}
+    \end{gather*}
+\ \\
+Hence $\frac{\partial \mathbf{Ax}}{\partial \mathbf{x}}=\mathbf{A}$ and $\frac{\partial \mathbf{x}^T\mathbf{A}\mathbf{x}}{\partial \mathbf{x}}=\mathbf{x}^T\mathbf{A
+}+(\mathbf{Ax})^T=\mathbf{x}^T(\mathbf{A}+\mathbf{A}^T)=2\mathbf{Ax}$
+\ \\
+If A is symmetric, $\mathbf{A}=\mathbf{A}^T$ and $\frac{\partial \mathbf{x}^T\mathbf{A}\mathbf{x}}{\partial \mathbf{x}}=2\mathbf{Ax}$
+\ \\
+QED.
+\end{itemize}
+Using $ \frac{\partial \mathbf{x}^T\mathbf{A}\mathbf{x}}{\partial \mathbf{x}}=\mathbf{x}^T(\mathbf{A}+\mathbf{A}^T)$ and the fact that $\mathbf{\Sigma}$ is symmetric, we have
+
+\begin{equation}
+    \begin{split}
+        \frac{\partial  { \ln \mathcal{L}( \{ \mu, \Sigma \}; \{ x^{(i)}\}_{i = 1}^N}}{\partial \mu}&=\frac{\partial  -\frac{1}{2}\sum\limits_{i=1}^N [( \mathbf{x^{(i)}} - \mathbf{\mu})^T
+	 	\mathbf{\Sigma}^{-1} ( \mathbf{x^{(i)}} - \mathbf{\mu})}{\partial \mu}\\
+	 	&=   -\sum\limits_{i=1}^N 
+	 	\mathbf{\Sigma}^{-1} ( \mathbf{x^{(i)}} - \mathbf{\mu})
+    \end{split}
+\end{equation}
+\ \\
+Setting the derivative to 0, we have
+
+\begin{align*}
+    -\sum\limits_{i=1}^N 
+	 	\mathbf{\Sigma}^{-1} ( \mathbf{x^{(i)}} - \mathbf{\mu}) &= 0\\
+	 	\mathbf{\Sigma}^{-1}(\sum\limits_{i=1}^N \mathbf{x^{(i)}} - N \mu) &= 0
+\end{align*}
+\ \\
+Since $\Sigma$ is positive definite, we can divide both sides by $\mathbf{\Sigma}$
+
+\begin{gather*}
+\sum\limits_{i=1}^N \mathbf{x^{(i)}} - N \mu=0\\
+\hat{\mu}_{\mathsf{MLE}} = \frac{1}{N} \sum
+\limits_{i=1}^N \mathbf{x^{(i)}}
+\end{gather*}
+\ \\
+To solve for $\hat{\Sigma}_{\mathsf{MLE}}$, we take the derivative of the log likelihood function with respect to $\Sigma^{-1}$ and set it to 0.
+\begin{equation}
+    \begin{split}
+        \frac{\partial { \ln \mathcal{L}( \{ \mu, \mathbf{\Sigma} \}; \{ x^{(i)}\}_{i = 1}^N}}{\partial \mathbf{\Sigma}^{-1}} &= \frac{\partial \left [-\frac{1}{2}\sum\limits_{i=1}^N [( \mathbf{x^{(i)}} - \mathbf{\mu})^T
+	 	\mathbf{\Sigma}^{-1} ( \mathbf{x^{(i)}} - \mathbf{\mu})]-\frac{N}{2}\ln\mathsf{det}(\mathbf{\Sigma}) + N\ln C \right ]}{\partial \mathbf{\Sigma^{-1}}}\\
+	 	&= \frac{\partial  \left [-\frac{1}{2}\sum\limits_{i=1}^N [( \mathbf{x^{(i)}} - \mathbf{\mu})^T
+	 	\mathbf{\Sigma}^{-1} ( \mathbf{x^{(i)}} - \mathbf{\mu}) -\frac{N}{2}\ln\mathsf{det}(\mathbf{\Sigma})\right ]}{\partial \mathbf{\Sigma^{-1}}}\\
+	 	&= \frac{\partial  \left[-\frac{1}{2}\sum\limits_{i=1}^N \mathsf{trace} \left ( \mathbf{\Sigma}^{-1}( \mathbf{x^{(i)}} - \mathbf{\mu})( \mathbf{x^{(i)}} - \mathbf{\mu})^T \right )
+	 	  -\frac{N}{2}\ln\mathsf{det}(\mathbf{\Sigma})\right]}{\partial \mathbf{\Sigma^{-1}}}\\
+	 	&=\frac{\partial  \left[-\frac{1}{2} \mathsf{trace} \left (\mathbf{\Sigma}^{-1}\sum\limits_{i=1}^N [( \mathbf{x^{(i)}} - \mathbf{\mu})( \mathbf{x^{(i)}} - \mathbf{\mu})^T] \right )
+	 	  -\frac{N}{2}\ln\mathsf{det}(\mathbf{\Sigma})\right]}{\partial \mathbf{\Sigma^{-1}}}\\
+	 	  &=\frac{\partial  \left[-\frac{1}{2} \mathsf{trace} \left (\mathbf{\Sigma}^{-1}\sum\limits_{i=1}^N [( \mathbf{x^{(i)}} - \mathbf{\mu})( \mathbf{x^{(i)}} - \mathbf{\mu})^T] \right )
+	 	  \right]}{\partial \mathbf{\Sigma^{-1}}} +\frac{\partial \left[-\frac{N}{2}\ln\mathsf{det}(\mathbf{\Sigma})\right]}{\partial \mathbf{
+	 	  \Sigma^{-1}}}
+    \end{split}
+\end{equation}
+\ \\
+To further simplify the derivative, we introduce the following properties
+\ \\
+\begin{itemize}
+   
+
+ \item $$\frac{\partial \ln\mathsf{det}M}{\partial M} = M^{-T}$$ 
+
+\emph{Proof}:
+Using chain rule, we have
+$$\frac{\partial \ln\mathsf{det}M}{\partial M} = \frac{\partial \ln\mathsf{det}M}{\partial \mathsf{det}M}\frac{\partial \mathsf{det}M}{\partial M}$$ 
+Note that $\frac{\partial \ln\mathsf{det}M}{\partial M}$ and $\frac{\partial \mathsf{det}M}{\partial M}$ are matrices and $\frac{\partial \ln\mathsf{det}M}{\partial \mathsf{det}M}$ is a scalar. 
+
+Since $\mathsf{det}(M)$is a scalar, $\frac{\partial \ln\mathsf{det}M}{\partial \mathsf{det}M} = \frac{1}{\mathsf{det}M}$
+
+By Jacobi's formula, denoting matrix of all ones by J, we have
+\begin{equation}
+    \begin{split}
+        \frac{\partial \mathsf{det}M}{\partial m} &= \mathsf{det}M * \mathsf{trace}\left(M^{-1}\frac{\partial M}{\partial m}\right)\\
+        &= \mathsf{det}M * \mathsf{trace}\left(M^{-1}J^{ij}\right)\\
+    \end{split}
+\end{equation}
+Since trace of a square matrix which is the product of two matrices can be rewritten as the sum of entry-wise products of their elements, we have $\mathsf{trace}(MJ^{ij})=M^TJ^{ij}=(M^T)^{ij}$.  
+
+Therefore $\mathsf{trace}(M^{-1}J^{ij})=(M^{-1})^{ji}$.
+
+Hence
+\begin{equation}
+    \begin{split}
+        \frac{\partial \ln\mathsf{det}M}{\partial M} &= \frac{\partial \ln\mathsf{det}M}{\partial \mathsf{det}M}\frac{\partial \mathsf{det}M}{\partial M}\\
+        &= \frac{1}{\mathsf{det}M}\mathsf{det}M^{-T}\\
+        &= M^{-T}
+    \end{split}
+\end{equation}
+QED.
+\ \\
+ \item $$ \frac{\partial}{\partial  A} \mathsf{trace}[AB]  = B^T$$
+ \emph{Proof}:
+\begin{equation}
+    \begin{split}
+         \mathsf{trace}[AB] &= \mathsf{trace} \left[\begin{bmatrix}a_1\\
+a_2\\a_3\\
+\vdots\\
+a_n
+\end{bmatrix}\begin{bmatrix}b_1
+b_2 b_3
+\hdots
+b_n
+\end{bmatrix}\right]\\\\
+&=\mathsf{
+trace}\begin{bmatrix}
+a_{1}b_{1}&a_{1}b_{2}&\cdots &a_{1}b_{n} \\
+a_{2}b_{1}&a_{2}b_{2}&\cdots &a_{2}b_{n} \\
+\vdots & \vdots & \ddots & \vdots\\
+a_{n}b_{1}&a_{n}b_{2}&\cdots &a_{n}b_{n}\\\\
+\end{bmatrix}\\
+&=\sum\limits_{i=1}^{m}a_{1i}b_{i1}+\sum\limits_{i=1}^{m}a_{2i}b_{i2} + ... +\sum\limits_{i=1}^{m}a_{ni}b_{in}\\
+    \end{split}
+\end{equation}
+Hence
+\begin{gather*}
+        \frac{\partial}{\partial  a_{ij}} \mathsf{trace}[AB] = b_{ji}\\
+        \frac{\partial}{\partial  A} \mathsf{trace}[AB]  = B^T
+\end{gather*}
+QED.
+\end{itemize}
+\ \\
+
+\ \\
+Using $\frac{\partial \ln\mathsf{det}M}{\partial M} = M^{-T}$, we have
+\begin{equation}
+    \begin{split}
+        \frac{\partial \left[-\frac{N}{2}\ln\mathsf{det}(\mathbf{\Sigma})\right]}{\partial \mathbf{
+	 	  \Sigma^{-1}}}&= \frac{\partial \left[\frac{N}{2}\ln\mathsf{det}(\mathbf{\Sigma^{-1}})\right]}{
+	 	  \partial \mathbf{
+	 	  \Sigma^{-1}}}\\&=\frac{N}{2}(\mathbf{\Sigma}^{-1})^{-T}\\
+	 	  &= \frac{N}{2}\mathbf{\Sigma}^T\\
+	 	  &= \frac{N}{2}\mathbf{\Sigma}
+    \end{split}
+\end{equation}
+\ \\
+Using $\frac{\partial}{\partial  A} \mathsf{trace}[AB]  = B^T$, we have
+\begin{equation}
+    \begin{split}
+    \frac{\partial  \left[-\frac{1}{2} \mathsf{trace} \left (\mathbf{\Sigma}^{-1}\sum\limits_{i=1}^N [( \mathbf{x^{(i)}} - \mathbf{\mu})( \mathbf{x^{(i)}} - \mathbf{\mu})^T] \right )
+	 	  \right]}{\partial \mathbf{\Sigma^{-1}}}&=-\frac{1}{2}  \sum\limits_{i=1}^N [( \mathbf{x^{(i)}} - \mathbf{\mu})( \mathbf{x^{(i)}} - \mathbf{\mu})^T] 
+    \end{split}
+\end{equation}
+\ \\
+Combining the results, we have
+\begin{equation}
+    \begin{split}
+       \frac{\partial { \ln \mathcal{L}( \{ \mu, \mathbf{\Sigma} \}; \{ x^{(i)}\}_{i = 1}^N}}{\partial \mathbf{\Sigma}^{-1}}&= \frac{\partial  \left[-\frac{1}{2} \mathsf{trace} \left (\mathbf{\Sigma}^{-1}\sum\limits_{i=1}^N [( \mathbf{x^{(i)}} - \mathbf{\mu})( \mathbf{x^{(i)}} - \mathbf{\mu})^T] \right )
+	 	  \right]}{\partial \mathbf{\Sigma^{-1}}} +\frac{\partial \left[-\frac{N}{2}\ln\mathsf{det}(\mathbf{\Sigma})\right]}{\partial \mathbf{
+	 	  \Sigma^{-1}}}\\
+	 	  &=\frac{N}{2}\mathbf{\Sigma}-\frac{1}{2}  \sum\limits_{i=1}^N [( \mathbf{x^{(i)}} - \mathbf{\mu})( \mathbf{x^{(i)}} - \mathbf{\mu})^T] \\
+	 	  &= \frac{1}{2}\left[N\mathbf{\Sigma} - \sum\limits_{i=1}^N (\mathbf{x^{(i)}}-\mu)(\mathbf{x^{(i)}}-\mu
+	 	  )^T\right] 
+    \end{split}
+\end{equation}
+
+\ \\
+Setting it to zero
+\begin{gather*}
+	 	N\mathbf{\Sigma} - \sum\limits_{i=1}^N (\mathbf{x^{(i)}}-\mu)(\mathbf{x^{(i)}}-\mu)^T =0\\
+	 	\hat{\Sigma}_{\mathsf{MLE}}= \frac{1}{N}\sum\limits_{i=1}^N (\mathbf{x^{(i)}}-\hat{\mu}_{\mathsf{MLE}})(\mathbf{x^{(i)}}-\hat{\mu}_{\mathsf{MLE}})^T
+\end{gather*}
+\ \\
+In summary, we obtain 
+
+$\hat{\mu}_{\mathsf{MLE}} = \frac{1}{N} \sum
+\limits_{i=1}^N \mathbf{x^{(i)}} = \Bar{\mathbf{x}}$
+
+$\hat{\Sigma}_{\mathsf{MLE}} = \frac{1}{N}\sum\limits_{i=1}^N (\mathbf{x^{(i)}}-\hat{\mu}_{\mathsf{MLE}})(\mathbf{x^{(i)}}-\hat{\mu}_{\mathsf{MLE}})^T$
+}
+\vfill
+\clearpage
+
+\subsection*{Problem 3}
+
+In this problem we will use a numerical optimization routine to obtain maximum likelihood estimate
+of parameters.
+
+Suppose $\{ x^{(i) }\in \mathbb{R} \}_{i = 1}^N$ with $x^{(i)} \sim p(x ; x_0, \gamma)$
+defined as:
+$$p( x ; x_0, \gamma )= \frac{1}{\pi\exp( \gamma) \left [ 
+	1 + \left( \frac{x - x_0}{\exp(\gamma)} \right)^2 \right ]}  $$
+
+
+	\label{question:cauchy}
+	\subsubsection*{(a)}
+	Prove that $p( x ; x_0, \gamma )$ is a probability density function.
+	
+	{\noindent \bf Solution: 
+	To show that $p( x ; x_0, \gamma )$ is a probability density function, we need to show
+	\ \\
+	1. $p( x ; x_0, \gamma ) \textgreater 0$ for all x.
+	\ \\
+	2. $\int p( x ; x_0, \gamma )dx$ = 1
+	\ \\
+	1.Since for all x
+	\begin{gather*}
+	    \pi > 0 \\
+        \exp(\gamma) > 0 \\
+        	1 + \left( \frac{x - x_0}{\exp(\gamma)} \right)^2 > 0 \\
+    \end{gather*}
+	\ \\
+	We have for all x
+	\begin{gather}
+	    p( x ; x_0, \gamma )= \frac{1}{\pi\exp( \gamma) \left [ 
+	1 + \left( \frac{x - x_0}{\exp(\gamma)} \right)^2 \right ]} >0
+	\end{gather}
+	2.
+	\ \\
+	Denote $\frac{x-x_0}{\exp(\gamma)}$ by $t$ for simplicity. 
+	\ \\
+	We know $dx = d(t\exp(\gamma)+x_0)=\exp(\gamma)dt$
+    \begin{equation}
+        \begin{split}
+            \int_{-\infty}^{\infty} p( x ; x_0, \gamma )dx&=\int_{-\infty}^{\infty} \frac{1}{\pi\exp( \gamma) \left [ 
+	1 + \left( \frac{x - x_0}{\exp(\gamma)} \right)^2 \right ]}dx\\
+	&= \int_{-\infty}^{\infty} \frac{\exp(\gamma)}{\pi\exp( \gamma) \left [ 
+	1 + t^2 \right]} dt\\
+	&= \int_{-\infty}^{\infty} \frac{1}{\pi \left [ 
+	1 + t^2 \right]} dt\\
+	&= \frac{1}{\pi}arctan(t)\bigm|_{-\infty}^{\infty}\\
+	&= \frac{1}{\pi}(\frac{\pi}{2}-\frac{-\pi}{2}) \\
+	&= 1
+        \end{split}
+    \end{equation}
+    \ \\
+    Therefore, $p( x ; x_0, \gamma )$ is a probability density function.
+	}
+	
+	\vfill
+	
+	\subsubsection*{(b)}
+	Prove that the mean $\mathbb{E}_{x \sim p( x ; x_0, \gamma )} \left [x \right ]$ is undefined.
+	
+	{\noindent \bf Solution: 
+	\ \\
+	Denote $\frac{x-x_0}{\exp(\gamma)}$ by $t$ for simplicity. 
+	\begin{equation}
+	    \begin{split}
+	        \mathbb{E}_{x \sim p( x ; x_0, \gamma )} \left [x \right ] &=
+	        \int_{-\infty}^{\infty} x p( x ; x_0, \gamma )dx \\
+	        &=\int_{-\infty}^{\infty} \frac{x}{\pi\exp( \gamma) \left [ 
+	1 + \left( \frac{x - x_0}{\exp(\gamma)} \right)^2 \right ]}dx\\
+	        &=\int_{-\infty}^{\infty} \frac{\exp(\gamma)t+x_0}{\pi \left [ 
+	1 + t^2 \right ]}dt \\
+	&= \int_{-\infty}^{\infty} \frac{\exp(\gamma)t}{\pi \left [ 
+	1 + t^2 \right ]}dt +\int_{-\infty}^{\infty} \frac{x_0}{\pi \left [ 
+	1 + t^2 \right ]}dt\\
+	&= \frac{\exp(\gamma)}{\pi}\int_{-\infty}^{\infty} \frac{t}{ \left [ 
+	1 + t^2 \right ]}dt + \frac{x_0}{\pi}\int_{-\infty}^{\infty} \frac{1}{ \left [ 
+	1 + t^2 \right ]}dt\\
+	&=\frac{\exp(\gamma)}{\pi}\int_{-\infty}^{\infty} \frac{1}{ 2\left [ 
+	1 + t^2 \right ]}dt^2 + \frac{x_0}{\pi}\int_{-\infty}^{\infty} \frac{1}{ \left [ 
+	1 + t^2 \right ]}dt\\
+	&=\frac{\exp(\gamma)}{2\pi}\int_{-\infty}^{\infty} \frac{1}{ \left [ 
+	1 + t^2 \right ]}dt^2 + \frac{x_0}{\pi}\int_{-\infty}^{\infty} \frac{1}{ \left [ 
+	1 + t^2 \right ]}dt\\
+	&=\frac{\exp(\gamma)}{2\pi}log(t^2)\bigm|_{1}^{\infty} + \frac{x_0}{\pi}arctan(t)\bigm|_{-\infty}^{\infty}\\
+	&=\frac{\exp(\gamma)}{2\pi}(log(\infty)-log(1))+x_0
+	    \end{split}
+	\end{equation}
+	
+	\ \\
+	However, $log(\infty)$ is undefined.
+	\ \\
+    Hence, $\mathbb{E}_{x \sim p( x ; x_0, \gamma )} \left [x \right ]$ is undefined.	
+	}
+	
+	\vfill
+	
+	\subsubsection*{(c)}
+	Write the log likelihood function $\ln \mathcal{L}(\{x_0, \gamma\}; \{x^{(i)}\}_{i = 1}^N)$ and
+	the expression for 
+	$\frac{\partial \ln \mathcal{L}( \{x_0, \gamma\}; \{x^{(i)}\}_{i = 1}^N)}
+	{\partial x_0}$ and $\frac{\partial 
+		\ln \mathcal{L}(\{x_0, \gamma\}; \{x^{(i)}\}_{i = 1}^N)}
+	{\partial \gamma}$.
+	Plot the log likelihood value as a 3D surface plot: x-axis should run over $x_0$ and
+	y-axis should run over $\gamma$. z-axis should correspond to the log likelihood value at
+	the corresponding $(x_0, \gamma)$ pair. Include the plot in your writeup.
+	 Do the stationary points (solutions to the maximum likelihood equations) have closed form solutions?
+	 
+	 {\noindent \bf Solution: 
+	 \begin{equation}
+	     \begin{split}
+	         \ln \mathcal{L}(\{x_0, \gamma\}; \{x^{(i)}\}_{i = 1}^N)&=\ln\prod\limits_{i=1}^N p( x ; x_0, \gamma )\\
+	         &= \ln\prod\limits_{i=1}^N\frac{1}{\pi\exp( \gamma) \left [ 
+	1 + \left( \frac{x^{(i)} - x_0}{\exp(\gamma)} \right)^2 \right ]}  \\
+	&=\sum\limits_{i=1}^N \ln\frac{1}{\pi\exp( \gamma) \left [ 
+	1 + \left( \frac{x^{(i)} - x_0}{\exp(\gamma)} \right)^2 \right ]} \\
+	&= -\sum\limits_{i=1}^N \ln\left[\pi\exp( \gamma) 
+	\left(1 + \left( \frac{x^{(i)} - x_0}{\exp(\gamma)} \right)^2\right) \right ]\\
+	&= -\sum\limits_{i=1}^N\ln\pi-\sum\limits_{i=1}^N\ln\exp(\gamma)-\sum\limits_{i=1}^N\ln\left [ 
+	1 + \left( \frac{x^{(i)} - x_0}{\exp(\gamma)} \right)^2 \right ]\\
+	&= -N\ln\pi-N\ln\exp(\gamma)-\sum\limits_{i=1}^N\ln\left [ 
+	1 + \left( \frac{x^{(i)} - x_0}{\exp(\gamma)} \right)^2 \right ]\\
+	&= -N\ln\pi-N\gamma-\sum\limits_{i=1}^N\ln\left [ 
+	1 + \left( \frac{x^{(i)} - x_0}{\exp(\gamma)} \right)^2 \right ]
+	  \end{split}
+	 \end{equation}
+	
+	\begin{equation}
+	    \begin{split}
+	    \frac{\partial \ln \mathcal{L}( \{x_0, \gamma\}; \{x^{(i)}\}_{i = 1}^N)}
+	{\partial x_0}&=\frac{\partial\left(-N\ln\pi-N\gamma-\sum\limits_{i=1}^N\ln\left [ 
+	1 + \left( \frac{x^{(i)} - x_0}{\exp(\gamma)} \right)^2 \right ]\right)}{\partial x_0}\\
+	&=\frac{\partial\left(-\sum\limits_{i=1}^N\ln\left [ 
+	1 + \left( \frac{x^{(i)} - x_0}{\exp(\gamma)} \right)^2 \right ]\right)}{\partial x_0}\\
+	&=-\sum\limits_{i=1}^N\frac{2\frac{x_0 - x^{(i)}}{\exp(2\gamma)}}{\left [ 
+	1 + \left( \frac{x^{(i)} - x_0}{\exp(\gamma)} \right)^2 \right ]}
+	    \end{split}
+	\end{equation} 
+	
+	\begin{equation}
+	    \begin{split}
+	        \frac{\partial 
+		\ln \mathcal{L}(\{x_0, \gamma\}; \{x^{(i)}\}_{i = 1}^N)}
+	{\partial \gamma}&=\frac{\partial\left(-N\ln\pi-N\gamma-\sum\limits_{i=1}^N\ln\left [ 
+	1 + \left( \frac{x^{(i)} - x_0}{\exp(\gamma)} \right)^2 \right ]\right)}{\partial \gamma}\\
+	&= -N -\frac{\partial\sum\limits_{i=1}^N\ln\left [ 
+	1 + \left( \frac{x^{(i)} - x_0}{\exp(\gamma)} \right)^2 \right ]}{\partial \gamma}\\
+	&= -N -\sum\limits_{i=1}^N\frac{-2\frac{(x^{(i)} - x_0)^2}{\exp(2\gamma)}}{\left [ 
+	1 + \left( \frac{x^{(i)} - x_0}{\exp(\gamma)} \right)^2 \right ]}
+	    \end{split}
+	\end{equation}
+\ \\
+Here is the plot:
+	
+	\includegraphics[width=\textwidth]{3d.png}
+\ \\
+    From the expression derived for the gradients, it is obvious that we cannot solve for either of $x_0$ or $\gamma$ easily. Therefore we conclude the stationary points do not have closed-form solutions. 
+    
+	 }
+	 
+	 \vfill
+	 
+\subsubsection*{(d)}
+	
+	Write a program to obtain an estimate of $\mathbf{\theta} = \{ x_0, \gamma \}$ using the dataset {\bf \mbox{problem3.csv}}.
+	If you are using Python, it is helpful to utilize $\mathsf{scipy.optimize.minimize}$ 
+	function. Choose gradient descent optimizer or a quasi-Newton optimizer such as BFGS.
+	List the optimizer that was chosen for this problem with the initial iterate.
+	Tabulate the coordinates of the iterates of the optmization process and the final converged solution.
+
+{\noindent \bf Solution:
+\ \\
+
+\begin{table}
+    \centering
+    \begin{tabular}{c|c}
+         $x_0$&$\gamma$\\
+       
+-20.000 & -20.000 \\
+-19.910 & -18.994 \\
+-19.552 & -14.970 \\
+-18.117 & 1.126 \\
+-12.377 & 65.511 \\
+-17.296 & 10.335 \\
+-17.950 & 3.000 \\
+32.637 & 0.372 \\
+-8.872 & 2.529 \\
+-2.321 & 2.188 \\
+15.158 & 1.280 \\
+1.068 & 2.012 \\
+2.803 & 1.922 \\
+65.257 & -5.513 \\
+6.151 & 1.524 \\
+3.478 & 1.842 \\
+3.362 & 1.802 \\
+2.897 & 1.641 \\
+1.038 & 0.996 \\
+-1.092 & -1.284 \\
+0.701 & 0.635 \\
+1.073 & 0.180 \\
+2.565 & -1.642 \\
+1.467 & -0.301 \\
+2.798 & -2.678 \\
+1.613 & -0.562 \\
+1.574 & -1.033 \\
+1.360 & -1.915 \\
+1.482 & -1.410 \\
+1.475 & -2.491 \\
+1.553 & -2.313 \\
+1.498 & -2.439 \\
+1.491 & -2.157 \\
+1.493 & -2.211 \\
+1.493 & -2.211 \\
+1.493 & -2.211 \\
+1.493 & -2.211 \\
+1.493 & -2.211 \\
+1.493 & -2.211
+
+    \end{tabular}
+    \caption{Iteration History for (d)}
+    \label{tab:my_label}
+\end{table}
+\ \\
+Please refer to Table 1 for the tabulation of the iterates of the optimization process and the final converged solution.
+\ \\
+\ \\
+The final converged solution is { $x_0$=1.49348727, $\lambda$=-2.21055569}.
+\ \\
+\ \\
+The gradient descent optimizer that was chosen for this problem is BFGS.
+\ \\
+\ \\
+The initial iterate starts from {$x_0$=-20,$\lambda$=-20}
+\ \\
+\ \\
+
+}
+
+\vfill
+
+\clearpage
+
+\subsection*{Problem 4}
+In this problem you will implement ridge regression estimator using gradient descent.
+Although the ridge regression does have a closed form solution, gradient descent
+form lets you avoid explicit matrix inversion and scale to larger data. We will see
+this in our subsequent lectures.
+
+For this problem, we assume we are given the labeled data pair:\\
+$ \{( \mathbf{x}^{(i)} \in \mathbb{R}^d, y^{(i)} \in \mathbb{R}) \}_{i= 1}^{N}$.
+The regularized objective function in this case is given by:
+$$\min\limits_{b\in \mathbb{R},\mathbf{w} \in \mathbb{R}^d} L(
+b, \mathbf{w}; \{( \mathbf{x}^{(i)}, y^{(i)}  \}_{i= 1}^{N}
+) 
+:=
+\frac{1}{N} \sum\limits_{i = 1}^N (y^{(i)} - ( b + \mathbf{w}^T \cdot 
+\mathbf{x}^{(i)}))^2 + \lambda \cdot || \mathbf{w}||_2^2
+$$
+
+The pseudocode for performing gradient descent is given by the following algorithm.
+The main structure consists of a loop which continues for a given number of epochs
+$T$. $\eta$ is the learning rate that controls the amount you want to step into the 
+direction of the negative gradient, and $\lambda$ is the regularization parameter.
+
+\begin{algorithmic}[h]
+	
+	\Function{GDRidge}{$S_{\mathsf{train}} = \{(\mathbf{x}^{(i)} , y^{(i)}) \}_{i= 1}^{N}$,
+	$T$,  $\eta$, $\lambda$}
+		
+	\State{Initialize the bias term $b \leftarrow 0$ and the slope $\mathbf{w} \leftarrow 
+		\mathbf{0}$}
+		
+	\For{$t = 1, \cdots, T$}
+		
+	\State{$b_{\mathsf{new}} \leftarrow b - \eta \cdot \frac{\partial 
+		L }{\partial b} 
+		$, \ \ \ \ $\mathbf{w}_{\mathsf{new}} \leftarrow \mathbf{w} - \eta \cdot \frac{\partial 
+	L  }{\partial \mathbf{w}}
+	$}	
+
+	\State{$b \leftarrow b_{\mathsf{new}}$, \ \ \ \ \ $\mathbf{w} \leftarrow \mathbf{w}_{\mathsf{new}}$}
+	
+	\EndFor
+	
+	\EndFunction
+	
+\end{algorithmic}
+
+\subsubsection*{(a)}
+	Write the expression for the gradient update for $b$ and $\mathbf{w}$.
+	
+	{\noindent \bf Solution: 
+	
+	
+	
+The gradient update for w is	
+
+        $\begin{aligned}
+	        \mathbf{w}_{\mathsf{new}}&=\mathbf{w}- \eta \cdot \frac{\partial L }{\partial \mathbf{w}}\\
+	        &=\mathbf{w}-\eta\left[\frac{2}{N} \sum\limits_{i = 1}^N (y^{(i)} - ( b + \mathbf{w}^T \cdot \mathbf{x}^{(i)}))(-\mathbf{x}^{(i)})+2\lambda\mathbf{w}\right]
+	    \end{aligned}$
+    
+The gradient update for b is  
+    
+        $\begin{aligned}
+	        b_{\mathsf{new}}&=b- \eta \cdot \frac{\partial L }{\partial b}\\
+	        &=b
+	        -\eta\frac{2}{N} \sum\limits_{i = 1}^N (y^{(i)} - ( b + \mathbf{w}^T \cdot \mathbf{x}^{(i)}))(-1)\\
+	        &=b
+	        +\eta\left[\frac{2}{N} \sum\limits_{i = 1}^N (y^{(i)} - ( b + \mathbf{w}^T \cdot \mathbf{x}^{(i)}))\right]
+	    \end{aligned}$
+	
+    
+	
+
+	}
+	
+	\vfill
+\subsubsection*{(b)}
+	Implement the function $\mathsf{GDRidge}$ described above. Please include 
+	your source code in the writeup.
+	
+	{\noindent \bf Solution: 
+	\begin{lstlisting}
+
+def gradient_descent_ridge_reg(X, y, num_epochs,learning_rate,lambda):
+    w = np.zeros((X.shape[1],1)) #initialize the slope to 0
+    b = 0 #initialize the bias term to 0
+    N = y.shape[0] #extract N from input 
+  
+    for i in range(num_epochs):
+      
+        temp = y-(b+np.dot(X, w)) #temporary variable to hold value for calculation later 
+        w_partial = -2*np.matmul(X.T,temp)/N + 2*lambda*w
+        b_partial = 2*np.sum(temp)/N
+       
+        b_new = b + learning_rate * b_partial 
+        w_new = w - learning_rate * w_partial
+        b = b_new #update bias term
+        w = w_new #update slope
+	\end{lstlisting}
+	}
+	
+	\vfill
+\subsubsection*{(c)}
+	Use the Boston housing data (\url{https://www.cs.toronto.edu/~delve/data/boston/bostonDetail.html}) and scale the data appropriately: standardize the feature
+	matrix and [0, 1] scale the y values. Choose $T = 100$ and $\eta = 0.01$.
+
+	 For $\lambda = 0.1$, 
+	provide a x-y
+	plot with the epoch number as x-axis and plot the following quantities on the y-axis:
+	\begin{itemize}
+		\item The value of regularized objective $L$ at the start of each epoch.
+		\item The 2-norm of the weight vector $\mathbf{w}$ at the start of each epoch.
+	\end{itemize}
+
+	Here is an example plot:
+	
+	\includegraphics[width=\textwidth]{convergence.png}
+	
+	This will require you to modify the function written in Part (b) to compute the required
+	quantities.
+	
+	{\noindent \bf Solution: 
+	
+	
+	\includegraphics[width=\textwidth]{hw1_4c.png}
+	
+	}
+	
+	\vfill
+	
+\subsubsection*{(d)}
+The next plot will examine how the coefficients for each of the features change as the
+	regularization parameter is varied. 
+	
+	Provide a coefficient path plot for the Boston housing data for $\lambda = 10, 1, 0.1, 0.01, 0.001$.
+	$x$-axis is for the regularization value and $y$-axis
+	for the coefficient of the final converged iterate of your gradient descent algorithm. 
+	Make sure to scale the data appropriately. Choose $T = 100$ and $\eta = 0.01$.
+	
+	\ \\
+	Here is an example plot for a dataset with 7 features: there is a connected path for each
+	of the 7 features as the regularization parameter is varied.
+	
+	\includegraphics[width=\textwidth]{coef_path.png}
+		
+	
+	What do you notice about the behavior of the coefficients
+	as the regularization is varied? Include the coefficient path plot and your analysis.
+
+{\noindent \bf Solution: 
+
+
+\includegraphics[width=\textwidth]{hw1_4d.png}
+ From the coefficient path plot, we notice that the ridge estimate coefficients converge to zero as the regularization parameter tends to infinity.
+ \ \\
+Ridge regression is a regularization method which tries to avoid overfitting of data by penalizing large coefficients. Ridge regression has an additional factor $\lambda$ which is called the penalty factor that is added while estimating the coefficients. This penalty factor penalizes high value of coefficients which in turn shrinks coefficients, thereby reducing the mean squared error and predicted error.
+\ \\
+Therefore, the higher the value of $\lambda$, the greater will be the shrinkage of the coefficients. As $\lambda$ approach infinity, the coefficients would converge to 0 (but never become 0). 
+}
+\end{document}
